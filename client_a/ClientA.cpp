@@ -8,6 +8,8 @@
 #include <sstream>
 #include <thread>
 
+#include "Accel.h"
+
 static int64_t nowMs() {
     using namespace std::chrono;
     return duration_cast<milliseconds>(
@@ -17,27 +19,26 @@ static int64_t nowMs() {
 
 void ClientA::run(const std::string& host, uint16_t port) {
 
-    TcpConnection conn(0);
+    TcpConnection conn(-1);
 
     if (!conn.connectTo(host, port)) {
         std::cerr << "[A] connect failed\n";
         return;
     }
 
-    conn.sendLine("ROLE A");
+    conn.sendLine(ROLE_A);
     std::cout << "[A] connected\n";
 
     for (int i = 0; i < 20; ++i) {
         int64_t ts = nowMs();
 
         double x = std::sin(i);
-        double y = 10;
-        double z = std::cos(i);
+        double y = 0;
+        double z = 0;
 
-        std::ostringstream msg;
-        msg << ts << " " << x << " " << y << " " << z;
+        AccelData res(ts, x, y, z);
 
-        if (!conn.sendLine(msg.str())) {
+        if (!conn.sendLine(res.to_json().dump())) {
             std::cerr << "[A] send failed\n";
             return;
         }

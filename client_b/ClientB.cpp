@@ -6,8 +6,9 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <thread>
+
+#include "Accel.h"
 
 
 static int64_t nowMs() {
@@ -17,36 +18,37 @@ static int64_t nowMs() {
     ).count();
 }
 
+double calc_distance(double x, double y, double z ) {
+    return sqrt(x*x + y*y + z*z);
+}
+
 void ClientB::run(const std::string& host, uint16_t port) {
 
-    TcpConnection conn(0);
+    TcpConnection conn(-1);
 
     if (!conn.connectTo(host, port)) {
         std::cerr << "[B] connect failed\n";
         return;
     }
 
-    conn.sendLine("ROLE B");
+    conn.sendLine(ROLE_B);
     std::cout << "[B] connected\n";
 
     for (int i = 0; i < 20; ++i) {
-        int64_t ts = nowMs();
-
-        double x = std::sin(i);
-        double y = 10;
-        double z = std::cos(i);
-
-        std::ostringstream msg;
-        msg << ts << " " << x << " " << y << " " << z;
-
-        if (!conn.sendLine(msg.str())) {
-            std::cerr << "[B] send failed\n";
-            return;
-        }
-
         std::string response;
         if (!conn.recvLine(response)) {
             std::cerr << "[B] recv failed\n";
+            return;
+        }
+
+        AccelData data = AccelData::from_json(response);
+
+        double dis = calc_distance(data.x, data.y, data.z);
+
+        AccelResult res(data.timestamp, dis);
+
+        if (!conn.sendLine(res.to_json().dump())) {
+            std::cerr << "[B] send failed\n";
             return;
         }
 

@@ -1,15 +1,17 @@
-#include "../transport/TcpConnection.h"
+#include <Accel.h>
+
+
+#include "TcpConnection.h"
 
 #include <iostream>
 #include <optional>
 #include <string>
 
+
 static std::string readRole(TcpConnection& c) {
     std::string line;
     if (!c.recvLine(line)) return "";
-    if (line == "ROLE A") return "A";
-    if (line == "ROLE B") return "B";
-    return "";
+    return line;
 }
 
 int main(int argc, char* argv[]) {
@@ -32,11 +34,11 @@ int main(int argc, char* argv[]) {
         if (!client) continue;
 
         std::string role = readRole(*client);
-        if (role == "A" && !connA) {
+        if (role == ROLE_A && !connA) {
             connA = std::move(client);
             std::cout << "[S] client A connected\n";
 
-        } else if (role == "B" && !connB) {
+        } else if (role == ROLE_B && !connB) {
 
             connB = std::move(client);
 
