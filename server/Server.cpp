@@ -1,0 +1,72 @@
+
+#include "Server.h"
+
+std::string Server::readRole(TcpConnection& c) {
+    std::string line;
+    if (!c.recvLine(line)) return "";
+    return line;
+}
+
+
+Server::Server(uint16_t port) : port(port), listener(-1) {
+
+    if (!listener.bindAndListen(port)) {
+        std::cerr << "[S] listen failed\n";
+        return;
+    }
+
+    std::cout << "[S] listening on port " << port << "\n";
+
+    while (!connA || !connB) {
+        auto client = listener.acceptClient();
+        if (!client) continue;
+
+        std::string role = Server::readRole(*client);
+        if (role == ROLE_A && !connA) {
+            connA = std::move(client);
+            std::cout << "[S] client A connected\n";
+
+        } else if (role == ROLE_B && !connB) {
+
+            connB = std::move(client);
+
+            std::cout << "[S] client B connected\n";
+        } else {
+
+            std::cerr << "[S] unknown role or duplicate\n";
+        }
+    }
+}
+void Server::run() {
+
+    if (!(connA && connB)) throw std::runtime_error("Server runs without clients");
+
+    while (true) {
+        std::string packet;
+        if (!connA->recvLine(packet)) {
+            std::cerr << "[S] A disconnected\n";
+            break;
+        }
+
+        std::cout << "[S] from A: " << packet << "\n";
+
+        if (!connB->sendLine(packet)) {
+            std::cerr << "[S] send to B failed\n";
+            break;
+        }
+
+        std::string result;
+
+        if (!connB->recvLine(result)) {
+            std::cerr << "[S] B disconnected\n";
+            break;
+        }
+
+        std::cout << "[S] from B: " << result << "\n";
+
+        if (!connA->sendLine(result)) {
+            std::cerr << "[S] send to A failed\n";
+            break;
+        }
+    }
+}

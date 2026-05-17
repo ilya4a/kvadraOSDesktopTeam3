@@ -32,7 +32,9 @@ target_link_libraries(transport PUBLIC
         core
 )
 
-add_executable(server server/main.cpp)
+add_executable(server server/main.cpp
+        server/Server.cpp
+        server/Server.h)
 target_link_libraries(server PRIVATE transport)
 
 add_executable(client_a
