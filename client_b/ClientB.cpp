@@ -34,11 +34,11 @@ void ClientB::run(const std::string& host, uint16_t port) {
     conn.sendLine(ROLE_B);
     std::cout << "[B] connected\n";
 
-    for (int i = 0; i < 20; ++i) {
+    while (true) {
         std::string response;
         if (!conn.recvLine(response)) {
             std::cerr << "[B] recv failed\n";
-            return;
+            break;
         }
 
         AccelData data = AccelData::from_json(response);
@@ -49,10 +49,9 @@ void ClientB::run(const std::string& host, uint16_t port) {
 
         if (!conn.sendLine(res.to_json().dump())) {
             std::cerr << "[B] send failed\n";
-            return;
+            break;
         }
 
         std::cout << "[B] got: " << response << "\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }

@@ -1,26 +1,29 @@
 #include "ClientA.h"
 #include "../transport/TcpConnection.h"
+#include "Accel.h"
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <thread>
 
-#include "Accel.h"
+using namespace std::chrono;
+using Clock = steady_clock;
 
 static int64_t nowMs() {
-    using namespace std::chrono;
     return duration_cast<milliseconds>(
         system_clock::now().time_since_epoch()
     ).count();
 }
 
+ClientA::ClientA() {
+    std::filesystem::create_directory(accel_dir);
+}
+
 void ClientA::run(const std::string& host, uint16_t port) {
-
     TcpConnection conn(-1);
-
     if (!conn.connectTo(host, port)) {
         std::cerr << "[A] connect failed\n";
         return;
@@ -29,30 +32,48 @@ void ClientA::run(const std::string& host, uint16_t port) {
     conn.sendLine(ROLE_A);
     std::cout << "[A] connected\n";
 
-    for (int i = 0; i < 20; ++i) {
-        int64_t ts = nowMs();
+    std::atomic<bool> running{true};
 
-        double x = std::sin(0);
-        if (i<10) {
-            x = std::sin(i);
+    std::thread sender([&]() {
+        auto nextSendTime = Clock::now();
+        for (int i = 0; i < TOTAL_PACKETS && running; ++i) {
+            int64_t ts = nowMs();
+
+            double x = std::sin(i * 0.1);
+            double y = 0.0;
+            double z = 0.0;
+
+            AccelData data(ts, x, y, z);
+            if (!conn.sendLine(data.to_json().dump())) {
+                std::cerr << "[A] send failed\n";
+                running = false;
+                return;
+            }
+
+            nextSendTime += SEND_INTERVAL;
+            std::this_thread::sleep_until(nextSendTime);
         }
-        double y = 0;
-        double z = 0;
+        running = false;
+    });
 
-        AccelData res(ts, x, y, z);
+    std::ofstream log(accel_dir / log_file_name, std::ios::app);
 
-        if (!conn.sendLine(res.to_json().dump())) {
-            std::cerr << "[A] send failed\n";
-            return;
-        }
+    if (!log) {
+        std::cerr << "[A] failed to open log file\n";
+    }
 
+    while (running) {
         std::string response;
         if (!conn.recvLine(response)) {
             std::cerr << "[A] recv failed\n";
-            return;
+            break;
         }
-
         std::cout << "[A] got: " << response << "\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (log.is_open()) {
+            log << response << std::endl;
+        }
     }
+
+    sender.join();
+    std::cout << "[A] finished\n";
 }
