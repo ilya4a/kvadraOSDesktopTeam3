@@ -1,12 +1,14 @@
-#include "ClientA.h"
-#include "../transport/TcpConnection.h"
 
+#include "ClientB.h"
+
+#include "TcpConnection.h"
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <thread>
+
 
 static int64_t nowMs() {
     using namespace std::chrono;
@@ -15,7 +17,7 @@ static int64_t nowMs() {
     ).count();
 }
 
-void ClientA::run(const std::string& host, uint16_t port) {
+void ClientB::run(const std::string& host, uint16_t port) {
 
     TcpConnection conn(0);
 
