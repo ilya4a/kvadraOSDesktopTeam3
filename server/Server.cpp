@@ -1,6 +1,8 @@
 
 #include "Server.h"
 
+#include <iostream>
+
 std::string Server::readRole(TcpConnection& c) {
     std::string line;
     if (!c.recvLine(line)) return "";
@@ -37,9 +39,19 @@ Server::Server(uint16_t port) : port(port), listener(-1) {
         }
     }
 }
+
+bool Server::isDuplicates(AccelData exResult, AccelData newResult) {
+
+    return (std::abs(exResult.x - newResult.x) < DUPLICATES_ACCURACY &&
+            std::abs(exResult.y - newResult.y) < DUPLICATES_ACCURACY &&
+            std::abs(exResult.z - newResult.z) < DUPLICATES_ACCURACY);
+}
+
 void Server::run() {
 
     if (!(connA && connB)) throw std::runtime_error("Server runs without clients");
+
+    AccelData exResult(0, 0, 0, 0);
 
     while (true) {
         std::string packet;
@@ -49,6 +61,17 @@ void Server::run() {
         }
 
         std::cout << "[S] from A: " << packet << "\n";
+
+        AccelData newResult = AccelData::from_json(packet);
+
+        if (isDuplicates(exResult, newResult)) {
+            exResult = newResult;
+            if (!connA->sendLine( AccelResult(newResult.timestamp, 0).to_json().dump() )) {
+                std::cerr << "[S] send to A failed\n";
+                break;
+            }
+            continue;
+        }
 
         if (!connB->sendLine(packet)) {
             std::cerr << "[S] send to B failed\n";

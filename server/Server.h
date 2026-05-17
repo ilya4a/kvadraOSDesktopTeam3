@@ -11,6 +11,9 @@
 
 
 class Server {
+
+  static constexpr double DUPLICATES_ACCURACY = 1e-4;
+
   TcpConnection listener;
 
   std::optional<TcpConnection> connA;
@@ -19,6 +22,7 @@ class Server {
   uint16_t port;
 
   static std::string readRole(TcpConnection& c);
+  static bool isDuplicates(AccelData exResult, AccelData newResult);
 
 public:
   Server(uint16_t port);

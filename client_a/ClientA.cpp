@@ -32,7 +32,10 @@ void ClientA::run(const std::string& host, uint16_t port) {
     for (int i = 0; i < 20; ++i) {
         int64_t ts = nowMs();
 
-        double x = std::sin(i);
+        double x = std::sin(0);
+        if (i<10) {
+            x = std::sin(i);
+        }
         double y = 0;
         double z = 0;
 
