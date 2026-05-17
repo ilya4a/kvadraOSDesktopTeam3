@@ -7,6 +7,26 @@
 
 #include <iostream>
 
+TcpConnection::TcpConnection(TcpConnection &&other) noexcept
+    :fd_(other.fd_), listen_fd_(other.listen_fd_) {
+    other.fd_ = -1;
+    other.listen_fd_ = -1;
+}
+
+TcpConnection &TcpConnection::operator=(TcpConnection &&other) noexcept {
+    if (this != &other) {
+        close();
+        fd_ = other.fd_;
+        listen_fd_ = other.listen_fd_;
+
+        other.fd_ = -1;
+        other.listen_fd_ = -1;
+    }
+    return *this;
+}
+
+
+
 TcpConnection::TcpConnection(int fd) : fd_(fd) {}
 
 TcpConnection::~TcpConnection() {

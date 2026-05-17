@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     uint16_t port = 5000;
     if (argc >= 2) port = static_cast<uint16_t>(std::stoi(argv[1]));
 
-    TcpConnection listener(0);
+    TcpConnection listener(-1);
     if (!listener.bindAndListen(port)) {
         std::cerr << "[S] listen failed\n";
         return 1;
@@ -33,10 +33,13 @@ int main(int argc, char* argv[]) {
 
         std::string role = readRole(*client);
         if (role == "A" && !connA) {
-            connA = std::move(*client);
+            connA = std::move(client);
             std::cout << "[S] client A connected\n";
+
         } else if (role == "B" && !connB) {
-            connB = std::move(*client);
+
+            connB = std::move(client);
+
             std::cout << "[S] client B connected\n";
         } else {
             std::cerr << "[S] unknown role or duplicate\n";
@@ -58,6 +61,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::string result;
+
         if (!connB->recvLine(result)) {
             std::cerr << "[S] B disconnected\n";
             break;

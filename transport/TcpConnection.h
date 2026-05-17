@@ -6,7 +6,17 @@
 
 
 class TcpConnection {
+    
+    
+    
 public:
+    TcpConnection(const TcpConnection&) = delete;
+    TcpConnection& operator=(const TcpConnection&) = delete;
+    TcpConnection(TcpConnection&& other) noexcept;
+    
+    TcpConnection& operator=(TcpConnection&& other) noexcept;
+    
+    
     TcpConnection(int fd);
     ~TcpConnection();
     bool connectTo(const std::string& host, uint16_t port);
