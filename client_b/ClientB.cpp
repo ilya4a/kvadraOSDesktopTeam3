@@ -1,4 +1,3 @@
-
 #include "ClientB.h"
 
 #include "TcpConnection.h"
@@ -7,22 +6,18 @@
 
 #include "Accel.h"
 
-
 static int64_t nowMs() {
     using namespace std::chrono;
-    return duration_cast<milliseconds>(
-        system_clock::now().time_since_epoch()
-    ).count();
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-double calc_distance(double x, double y, double z ) {
-    return sqrt(x*x + y*y + z*z);
+double calc_distance(double x, double y, double z) {
+    return sqrt(x * x + y * y + z * z);
 }
 
-ClientB::ClientB() : Client(log_dir) {}
+ClientB::ClientB() : Client(log_dir) { }
 
-void ClientB::run(const std::string& host, uint16_t port) {
-
+void ClientB::run(const std::string &host, uint16_t port) {
     TcpConnection conn(-1);
 
     if (!conn.connectTo(host, port)) {

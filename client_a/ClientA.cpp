@@ -1,6 +1,6 @@
 #include "ClientA.h"
-#include "../transport/TcpConnection.h"
 #include "Accel.h"
+#include "TcpConnection.h"
 
 #include <atomic>
 #include <chrono>
@@ -13,18 +13,17 @@ using namespace std::chrono;
 using Clock = steady_clock;
 
 static int64_t nowMs() {
-    return duration_cast<milliseconds>(
-        system_clock::now().time_since_epoch()
-    ).count();
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-ClientA::ClientA() : Client(log_dir){
-
+ClientA::ClientA() : Client(log_dir) {
     logMod = std::ofstream(log_mod_dir / log_mod_name, std::ios::app);
-    if (!logMod) std::cerr << "couldn't open a " << log_mod_dir / log_mod_name << std::endl;
+    if (!logMod) {
+        std::cerr << "couldn't open a " << log_mod_dir / log_mod_name << std::endl;
+    }
 }
 
-void ClientA::run(const std::string& host, uint16_t port) {
+void ClientA::run(const std::string &host, uint16_t port) {
     TcpConnection conn(-1);
     if (!conn.connectTo(host, port)) {
         log("[A] connect failed");
@@ -34,12 +33,12 @@ void ClientA::run(const std::string& host, uint16_t port) {
     conn.sendLine(ROLE_A);
     log("[A] connected");
 
-    std::atomic<bool> running{true};
+    std::atomic<bool> running { true };
 
     std::thread sender([&]() {
         auto nextSendTime = Clock::now();
         int i = 0;
-        while ( running ) {
+        while (running) {
             int64_t ts = nowMs();
 
             double x = std::sin(i * 0.1);
@@ -63,12 +62,12 @@ void ClientA::run(const std::string& host, uint16_t port) {
         }
     });
 
-     log("[A] send failed");
+    log("[A] send failed");
 
     while (running) {
         std::string response;
         if (!conn.recvLine(response)) {
-            log( "[A] recv failed");
+            log("[A] recv failed");
             break;
         }
         if (logMod.is_open()) {

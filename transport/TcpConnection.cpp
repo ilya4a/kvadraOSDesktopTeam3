@@ -7,8 +7,7 @@
 
 #include <iostream>
 
-TcpConnection::TcpConnection(TcpConnection &&other) noexcept
-    :fd_(other.fd_), listen_fd_(other.listen_fd_) {
+TcpConnection::TcpConnection(TcpConnection &&other) noexcept : fd_(other.fd_), listen_fd_(other.listen_fd_) {
     other.fd_ = -1;
     other.listen_fd_ = -1;
 }
@@ -25,15 +24,13 @@ TcpConnection &TcpConnection::operator=(TcpConnection &&other) noexcept {
     return *this;
 }
 
-
-
-TcpConnection::TcpConnection(int fd) : fd_(fd) {}
+TcpConnection::TcpConnection(int fd) : fd_(fd) { }
 
 TcpConnection::~TcpConnection() {
     close();
 }
 
-bool TcpConnection::connectTo(const std::string& host, uint16_t port) {
+bool TcpConnection::connectTo(const std::string &host, uint16_t port) {
     close();
 
     fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -43,7 +40,7 @@ bool TcpConnection::connectTo(const std::string& host, uint16_t port) {
         return false;
     }
 
-    sockaddr_in addr{};
+    sockaddr_in addr {};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
 
@@ -53,7 +50,7 @@ bool TcpConnection::connectTo(const std::string& host, uint16_t port) {
         return false;
     }
 
-    if (::connect(fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    if (::connect(fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
         std::perror("connect");
         close();
         return false;
@@ -74,12 +71,12 @@ bool TcpConnection::bindAndListen(uint16_t port) {
     int opt = 1;
     setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    sockaddr_in addr{};
+    sockaddr_in addr {};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port);
 
-    if (bind(listen_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    if (bind(listen_fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
         std::perror("bind");
         close();
         return false;
@@ -95,12 +92,14 @@ bool TcpConnection::bindAndListen(uint16_t port) {
 }
 
 std::optional<TcpConnection> TcpConnection::acceptClient() {
-    if (listen_fd_ < 0) return std::nullopt;
+    if (listen_fd_ < 0) {
+        return std::nullopt;
+    }
 
-    sockaddr_in client_addr{};
+    sockaddr_in client_addr {};
     socklen_t len = sizeof(client_addr);
 
-    int client_fd = ::accept(listen_fd_, reinterpret_cast<sockaddr*>(&client_addr), &len);
+    int client_fd = ::accept(listen_fd_, reinterpret_cast<sockaddr *>(&client_addr), &len);
     if (client_fd < 0) {
         std::perror("accept");
         return std::nullopt;
@@ -109,15 +108,17 @@ std::optional<TcpConnection> TcpConnection::acceptClient() {
     return TcpConnection(client_fd);
 }
 
-bool TcpConnection::sendLine(const std::string& line) {
-    if (fd_ < 0) return false;
+bool TcpConnection::sendLine(const std::string &line) {
+    if (fd_ < 0) {
+        return false;
+    }
 
     std::string data = line;
     if (data.empty() || data.back() != '\n') {
         data.push_back('\n');
     }
 
-    const char* buf = data.c_str();
+    const char *buf = data.c_str();
     size_t total = 0;
     size_t to_send = data.size();
 
@@ -133,9 +134,11 @@ bool TcpConnection::sendLine(const std::string& line) {
     return true;
 }
 
-bool TcpConnection::recvLine(std::string& line) {
+bool TcpConnection::recvLine(std::string &line) {
     line.clear();
-    if (fd_ < 0) return false;
+    if (fd_ < 0) {
+        return false;
+    }
 
     char c = 0;
     while (true) {
@@ -147,7 +150,9 @@ bool TcpConnection::recvLine(std::string& line) {
             std::perror("recv");
             return false;
         }
-        if (c == '\n') break;
+        if (c == '\n') {
+            break;
+        }
         line.push_back(c);
     }
 
