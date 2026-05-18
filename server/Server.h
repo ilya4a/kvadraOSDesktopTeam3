@@ -1,8 +1,7 @@
 
 #ifndef KVADRAOSDESKTOPTEAM3_SERVER_H
 #define KVADRAOSDESKTOPTEAM3_SERVER_H
-#include <Accel.h>
-
+#include "Accel.h"
 
 #include "TcpConnection.h"
 

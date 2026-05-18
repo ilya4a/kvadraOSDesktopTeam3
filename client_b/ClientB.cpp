@@ -4,9 +4,6 @@
 #include "TcpConnection.h"
 #include <chrono>
 #include <cmath>
-#include <fstream>
-#include <iostream>
-#include <thread>
 
 #include "Accel.h"
 
@@ -22,22 +19,24 @@ double calc_distance(double x, double y, double z ) {
     return sqrt(x*x + y*y + z*z);
 }
 
+ClientB::ClientB() : Client(log_dir) {}
+
 void ClientB::run(const std::string& host, uint16_t port) {
 
     TcpConnection conn(-1);
 
     if (!conn.connectTo(host, port)) {
-        std::cerr << "[B] connect failed\n";
+        log("[B] connect failed");
         return;
     }
 
     conn.sendLine(ROLE_B);
-    std::cout << "[B] connected\n";
+    log("[B] connected");
 
     while (true) {
         std::string response;
         if (!conn.recvLine(response)) {
-            std::cerr << "[B] recv failed\n";
+            log("[B] recv failed");
             break;
         }
 
@@ -48,10 +47,10 @@ void ClientB::run(const std::string& host, uint16_t port) {
         AccelResult res(data.timestamp, dis);
 
         if (!conn.sendLine(res.to_json().dump())) {
-            std::cerr << "[B] send failed\n";
+            log("[B] send failed");
             break;
         }
 
-        std::cout << "[B] got: " << response << "\n";
+        log("[B] got: " + response);
     }
 }

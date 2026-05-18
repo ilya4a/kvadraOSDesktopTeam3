@@ -40,6 +40,7 @@ target_link_libraries(server PRIVATE transport)
 add_executable(client_a
         client_a/client_a_main.cpp
         client_a/ClientA.cpp
+        transport/Client.h
 )
 target_link_libraries(client_a PRIVATE transport)
 

@@ -4,23 +4,28 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <string>
 
-class ClientA {
+#include "Client.h"
+
+class ClientA : public Client {
 
     static constexpr double SEND_FREQ_HZ = 50.0;
 
     static constexpr auto SEND_INTERVAL = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
     std::chrono::duration<double>(1.0 / SEND_FREQ_HZ));
 
-    static constexpr int TOTAL_PACKETS = 1000;
+    static constexpr const char* log_dir = "logs/client_a";
 
-    const std::filesystem::path log_file_name = "module.log";
-    const std::filesystem::path accel_dir = "accel";
+    const std::filesystem::path log_mod_dir = "accel";
+    const std::filesystem::path log_mod_name = "module.log";
+    std::ofstream logMod;
 
 public:
     ClientA();
-    void run(const std::string& host, uint16_t port);
+    void run(const std::string& host, uint16_t port) override;
+    ~ClientA() = default;
 
 };
 

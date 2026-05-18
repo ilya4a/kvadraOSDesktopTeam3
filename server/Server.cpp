@@ -9,7 +9,6 @@ std::string Server::readRole(TcpConnection& c) {
     return line;
 }
 
-
 Server::Server(uint16_t port) : port(port), listener(-1) {
 
     if (!listener.bindAndListen(port)) {
@@ -47,49 +46,46 @@ bool Server::isDuplicates(AccelData exResult, AccelData newResult) {
             std::abs(exResult.z - newResult.z) < DUPLICATES_ACCURACY);
 }
 
+
 void Server::run() {
 
-    if (!(connA && connB)) throw std::runtime_error("Server runs without clients");
-
-    AccelData exResult(0, 0, 0, 0);
-
     while (true) {
-        std::string packet;
-        if (!connA->recvLine(packet)) {
-            std::cerr << "[S] A disconnected\n";
-            break;
-        }
 
-        std::cout << "[S] from A: " << packet << "\n";
+        if (!(connA && connB)) throw std::runtime_error("Server runs without clients");
 
-        AccelData newResult = AccelData::from_json(packet);
+        AccelData exResult(0, 0, 0, 0);
 
-        if (isDuplicates(exResult, newResult)) {
-            exResult = newResult;
-            if (!connA->sendLine( AccelResult(newResult.timestamp, 0).to_json().dump() )) {
+        while (true) {
+            std::string packet;
+            if (!connA->recvLine(packet)) {
+                std::cerr << "[S] A disconnected\n";
+                break;
+            }
+            // std::cout << "[S] from A: " << packet << "\n";
+            AccelData newResult = AccelData::from_json(packet);
+
+            if (isDuplicates(exResult, newResult)) {
+                exResult = newResult;
+                if (!connA->sendLine( AccelResult(newResult.timestamp, 0).to_json().dump() )) {
+                    std::cerr << "[S] send to A failed\n";
+                    break;
+                }
+                continue;
+            }
+            if (!connB->sendLine(packet)) {
+                std::cerr << "[S] send to B failed\n";
+                break;
+            }
+            std::string result;
+            if (!connB->recvLine(result)) {
+                std::cerr << "[S] B disconnected\n";
+                break;
+            }
+            // std::cout << "[S] from B: " << result << "\n";
+            if (!connA->sendLine(result)) {
                 std::cerr << "[S] send to A failed\n";
                 break;
             }
-            continue;
-        }
-
-        if (!connB->sendLine(packet)) {
-            std::cerr << "[S] send to B failed\n";
-            break;
-        }
-
-        std::string result;
-
-        if (!connB->recvLine(result)) {
-            std::cerr << "[S] B disconnected\n";
-            break;
-        }
-
-        std::cout << "[S] from B: " << result << "\n";
-
-        if (!connA->sendLine(result)) {
-            std::cerr << "[S] send to A failed\n";
-            break;
         }
     }
 }

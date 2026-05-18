@@ -18,62 +18,64 @@ static int64_t nowMs() {
     ).count();
 }
 
-ClientA::ClientA() {
-    std::filesystem::create_directory(accel_dir);
+ClientA::ClientA() : Client(log_dir){
+
+    logMod = std::ofstream(log_mod_dir / log_mod_name, std::ios::app);
+    if (!logMod) std::cerr << "couldn't open a " << log_mod_dir / log_mod_name << std::endl;
 }
 
 void ClientA::run(const std::string& host, uint16_t port) {
     TcpConnection conn(-1);
     if (!conn.connectTo(host, port)) {
-        std::cerr << "[A] connect failed\n";
+        log("[A] connect failed");
         return;
     }
 
     conn.sendLine(ROLE_A);
-    std::cout << "[A] connected\n";
+    log("[A] connected");
 
     std::atomic<bool> running{true};
 
     std::thread sender([&]() {
         auto nextSendTime = Clock::now();
-        for (int i = 0; i < TOTAL_PACKETS && running; ++i) {
+        int i = 0;
+        while ( running ) {
             int64_t ts = nowMs();
 
             double x = std::sin(i * 0.1);
+            i++;
             double y = 0.0;
             double z = 0.0;
 
             AccelData data(ts, x, y, z);
-            if (!conn.sendLine(data.to_json().dump())) {
-                std::cerr << "[A] send failed\n";
+
+            std::string data_s = data.to_json().dump();
+
+            if (!conn.sendLine(data_s)) {
                 running = false;
                 return;
             }
 
+            log(data_s);
+
             nextSendTime += SEND_INTERVAL;
             std::this_thread::sleep_until(nextSendTime);
         }
-        running = false;
     });
 
-    std::ofstream log(accel_dir / log_file_name, std::ios::app);
-
-    if (!log) {
-        std::cerr << "[A] failed to open log file\n";
-    }
+     log("[A] send failed");
 
     while (running) {
         std::string response;
         if (!conn.recvLine(response)) {
-            std::cerr << "[A] recv failed\n";
+            log( "[A] recv failed");
             break;
         }
-        std::cout << "[A] got: " << response << "\n";
-        if (log.is_open()) {
-            log << response << std::endl;
+        if (logMod.is_open()) {
+            logMod << response << std::endl;
         }
     }
 
     sender.join();
-    std::cout << "[A] finished\n";
+    log("[A] finished");
 }
