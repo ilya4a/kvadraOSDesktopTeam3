@@ -24,7 +24,7 @@ ClientA::ClientA() : Client(log_dir) {
 }
 
 void ClientA::run(const std::string &host, uint16_t port) {
-    TcpConnection conn(-1);
+    TcpCo   nnection conn(-1);
     if (!conn.connectTo(host, port)) {
         log("[A] connect failed");
         return;

@@ -1,4 +1,4 @@
-## Test assignment for the kvadraOS Desktop team 4.
+## Test assignment for the kvadraOS Desktop team 3.
 A minimal implementation of Level 1 has been completed.
 
 The assignment states a 2‑week deadline. Since I received the test task email on May 8,
