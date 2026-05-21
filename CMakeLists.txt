@@ -68,6 +68,7 @@ target_link_libraries(client_a PRIVATE grpc_proto core Threads::Threads)
 add_executable(client_b
         client_b/client_b_main.cpp
         client_b/ClientB.cpp
+        transport/Client.h
 )
 target_link_libraries(client_b PRIVATE grpc_proto core Threads::Threads)
 

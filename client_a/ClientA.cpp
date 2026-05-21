@@ -2,10 +2,12 @@
 #include "Accel.h"
 #include "TcpConnection.h"
 
+#include <accel.grpc.pb.h>
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <grpcpp/create_channel.h>
 #include <iostream>
 #include <thread>
 
@@ -17,64 +19,66 @@ static int64_t nowMs() {
 }
 
 ClientA::ClientA() : Client(log_dir) {
-    logMod = std::ofstream(log_mod_dir / log_mod_name, std::ios::app);
-    if (!logMod) {
+    logModule = std::ofstream(log_mod_dir / log_mod_name, std::ios::app);
+    if (!logModule) {
         std::cerr << "couldn't open a " << log_mod_dir / log_mod_name << std::endl;
     }
 }
 
 void ClientA::run(const std::string &host, uint16_t port) {
-    TcpConnection conn(-1);
-    if (!conn.connectTo(host, port)) {
-        log("[A] connect failed");
-        return;
-    }
+    auto channel = grpc::CreateChannel(
+        host + ":" + std::to_string(port),
+        grpc::InsecureChannelCredentials()
+    );
+    auto stub = AccelerometerService::NewStub(channel);
 
-    conn.sendLine(ROLE_A);
-    log("[A] connected");
+    grpc::ClientContext ctx;
+    ctx.AddMetadata("role", "A");
 
-    std::atomic<bool> running { true };
+    auto stream = stub->StreamAccelData(&ctx);
+
+    std::atomic<bool> running{true};
 
     std::thread sender([&]() {
         auto nextSendTime = Clock::now();
         int i = 0;
+
         while (running) {
-            int64_t ts = nowMs();
+            AccelPacket msg;
+            msg.set_timestamp(nowMs());
+            msg.set_x(std::sin(i * 0.1));
+            msg.set_y(0.0);
+            msg.set_z(0.0);
+            ++i;
 
-            double x = std::sin(i * 0.1);
-            i++;
-            double y = 0.0;
-            double z = 0.0;
-
-            AccelData data(ts, x, y, z);
-
-            std::string data_s = data.to_json().dump();
-
-            if (!conn.sendLine(data_s)) {
+            if (!stream->Write(msg)) {
                 running = false;
-                return;
+                break;
             }
 
-            log(data_s);
+            log(msg.DebugString());
 
             nextSendTime += SEND_INTERVAL;
             std::this_thread::sleep_until(nextSendTime);
         }
+
+        stream->WritesDone();
     });
 
-    log("[A] send failed");
-
-    while (running) {
-        std::string response;
-        if (!conn.recvLine(response)) {
-            log("[A] recv failed");
-            break;
-        }
-        if (logMod.is_open()) {
-            logMod << response << std::endl;
+    AccelModule response;
+    while (running && stream->Read(&response)) {
+        if (logModule.is_open()) {
+            logModule << response.timestamp() << " " << response.module() << std::endl;
         }
     }
 
+    running = false;
     sender.join();
-    log("[A] finished");
+
+    auto status = stream->Finish();
+    if (!status.ok()) {
+        log(std::string("[A] gRPC error: ") + status.error_message());
+    }
+
+    log("[A] finished: module = " + std::to_string( response.module()) + " ts: " + std::to_string(response.timestamp()));
 }

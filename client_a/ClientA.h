@@ -20,7 +20,7 @@ class ClientA : public Client {
 
     const std::filesystem::path log_mod_dir = "accel";
     const std::filesystem::path log_mod_name = "module.log";
-    std::ofstream logMod;
+    std::ofstream logModule;
 
   public:
     ClientA();
