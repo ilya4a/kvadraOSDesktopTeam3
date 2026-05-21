@@ -14,13 +14,13 @@ class Server {
     Server &owner_;
 
   public:
-    explicit ServiceImpl(Server &owner) : owner_(owner) {}
+    explicit ServiceImpl(Server &owner);
 
     grpc::Status StreamAccelData(
         grpc::ServerContext *context,
         grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream) override;
   };
-  
+
   uint16_t port_;
   ServiceImpl service_;
   std::unique_ptr<grpc::Server> grpc_server_;
