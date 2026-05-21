@@ -15,7 +15,7 @@ class Client {
     std::mutex m;
 
   protected:
-    Client(std::filesystem::path client_dir) : log_client_dir(client_dir) {
+    Client(std::filesystem::path client_dir = "client") : log_client_dir(client_dir) {
         std::error_code ec;
         std::filesystem::create_directories(log_client_dir, ec);
 

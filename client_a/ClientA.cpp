@@ -1,6 +1,5 @@
 #include "ClientA.h"
 #include "Accel.h"
-#include "TcpConnection.h"
 
 #include <accel.grpc.pb.h>
 #include <atomic>
@@ -26,10 +25,7 @@ ClientA::ClientA() : Client(log_dir) {
 }
 
 void ClientA::run(const std::string &host, uint16_t port) {
-    auto channel = grpc::CreateChannel(
-        host + ":" + std::to_string(port),
-        grpc::InsecureChannelCredentials()
-    );
+    auto channel = grpc::CreateChannel(host + ":" + std::to_string(port), grpc::InsecureChannelCredentials());
     auto stub = AccelerometerService::NewStub(channel);
 
     grpc::ClientContext ctx;
@@ -37,7 +33,7 @@ void ClientA::run(const std::string &host, uint16_t port) {
 
     auto stream = stub->StreamAccelData(&ctx);
 
-    std::atomic<bool> running{true};
+    std::atomic<bool> running { true };
 
     std::thread sender([&]() {
         auto nextSendTime = Clock::now();
@@ -70,6 +66,9 @@ void ClientA::run(const std::string &host, uint16_t port) {
         if (logModule.is_open()) {
             logModule << response.timestamp() << " " << response.module() << std::endl;
         }
+
+        log("[A] finished: module = " + std::to_string(response.module())
+            + " ts: " + std::to_string(response.timestamp()));
     }
 
     running = false;
@@ -79,6 +78,4 @@ void ClientA::run(const std::string &host, uint16_t port) {
     if (!status.ok()) {
         log(std::string("[A] gRPC error: ") + status.error_message());
     }
-
-    log("[A] finished: module = " + std::to_string( response.module()) + " ts: " + std::to_string(response.timestamp()));
 }

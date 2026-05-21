@@ -2,22 +2,19 @@
 #include <cmath>
 #include <iostream>
 
-Server::Server(uint16_t port)
-    : port_(port), service_(*this) {}
+Server::Server(uint16_t port) : port_(port), service_(*this) { }
 
 bool Server::isDuplicates(const AccelPacket &prev, const AccelPacket &cur) {
-    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY
-        && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
-        && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
+    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
+           && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
 }
 
-Server::ServiceImpl::ServiceImpl(Server &owner)  : owner_(owner) {};
-
+Server::ServiceImpl::ServiceImpl(Server &owner) : owner_(owner) { };
 
 grpc::Status Server::ServiceImpl::StreamAccelData(
-    grpc::ServerContext * context,
-    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream) {
-
+    grpc::ServerContext *context,
+    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
+) {
     AccelPacket prev;
     bool has_prev = false;
     AccelPacket cur;

@@ -1,19 +1,32 @@
-#ifndef KVADRAOSDESKTOPTEAM3_CLIENTBAPP_H
-#define KVADRAOSDESKTOPTEAM3_CLIENTBAPP_H
+#ifndef KVADRAOSDESKTOPTEAM3_BSERVER_H
+#define KVADRAOSDESKTOPTEAM3_BSERVER_H
 
-#include "Client.h"
+#include <memory>
 
-#include <cstdint>
-#include <filesystem>
-#include <string>
+#include "accel.grpc.pb.h"
+#include <grpcpp/grpcpp.h>
 
-class ClientB : public Client {
-    static constexpr const char *log_dir = "logs/client_b";
+#include <Client.h>
+
+class ClientB final : public Client {
+    class ServiceImpl final : public AccelerometerService::Service {
+        ClientB &owner_;
+
+      public:
+        ServiceImpl(ClientB &owner);
+        grpc::Status StreamAccelData(
+            grpc::ServerContext *context,
+            grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
+        ) override;
+    };
+
+    uint16_t port_;
+    ServiceImpl service_;
+    std::unique_ptr<grpc::Server> server_;
 
   public:
-    ClientB();
     void run(const std::string &host, uint16_t port) override;
-    ~ClientB() = default;
+    explicit ClientB(uint16_t port);
 };
 
-#endif // KVADRAOSDESKTOPTEAM3_CLIENTBAPP_H
+#endif // KVADRAOSDESKTOPTEAM3_BSERVER_H

@@ -30,5 +30,4 @@ class TcpConnection {
     int listen_fd_ = -1;
 };
 
-
 #endif // KVADRAOSDESKTOPTEAM3_TCPCONNECTION_H

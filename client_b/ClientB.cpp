@@ -1,57 +1,39 @@
 #include "ClientB.h"
 
-#include "TcpConnection.h"
-#include <chrono>
 #include <cmath>
+#include <stdexcept>
 
-#include "Accel.h"
+ClientB::ServiceImpl::ServiceImpl(ClientB &owner) : owner_(owner) { }
 
-#include <accel.grpc.pb.h>
-#include <grpcpp/create_channel.h>
-
-static int64_t nowMs() {
-    using namespace std::chrono;
-    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-}
-
-double calc_distance(double x, double y, double z) {
-    return sqrt(x * x + y * y + z * z);
-}
-
-ClientB::ClientB() : Client(log_dir) { }
-
-void ClientB::run(const std::string &host, uint16_t port) {
-    auto channel = grpc::CreateChannel(
-        host + ":" + std::to_string(port),
-        grpc::InsecureChannelCredentials()
-    );
-    auto stub = AccelerometerService::NewStub(channel);
-
-    grpc::ClientContext ctx;
-    ctx.AddMetadata("role", "B");
-
-    auto stream = stub->StreamAccelData(&ctx);
-
+grpc::Status ClientB::ServiceImpl::StreamAccelData(
+    grpc::ServerContext *,
+    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
+) {
     AccelPacket packet;
     while (stream->Read(&packet)) {
         AccelModule result;
         result.set_timestamp(packet.timestamp());
-        result.set_module(calc_distance(packet.x(), packet.y(), packet.z()));
+        result.set_module(std::sqrt(packet.x() * packet.x() + packet.y() * packet.y() + packet.z() * packet.z()));
+        stream->Write(result);
 
-        if (!stream->Write(result)) {
-            log("[B] send failed");
-            break;
-        }
+        owner_.log(
+            "[client_b] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module())
+        );
+    }
+    return grpc::Status::OK;
+}
 
-        log("[B] got: " + packet.DebugString());
+ClientB::ClientB(uint16_t port) : port_(port), service_(*this), Client("logs/client_b") { }
+
+void ClientB::run(const std::string &host, uint16_t port) {
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(host + ":" + std::to_string(port_), grpc::InsecureServerCredentials());
+    builder.RegisterService(&service_);
+
+    server_ = builder.BuildAndStart();
+    if (!server_) {
+        throw std::runtime_error("failed to start B server");
     }
 
-    stream->WritesDone();
-
-    auto status = stream->Finish();
-    if (!status.ok()) {
-        log(std::string("[B] gRPC error: ") + status.error_message());
-    }
-
-    log("[B] finished");
+    server_->Wait();
 }
