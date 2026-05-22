@@ -17,13 +17,15 @@ grpc::Status ClientB::ServiceImpl::StreamAccelData(
         stream->Write(result);
 
         owner_.log(
-            "[client_b] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module())
+            "[B] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module())
         );
     }
     return grpc::Status::OK;
 }
 
-ClientB::ClientB(uint16_t port) : port_(port), service_(*this), Client("logs/client_b") { }
+ClientB::ClientB(uint16_t port) : port_(port), service_(*this), Client("logs/client_b") {
+    std::cout << "B started on port " << port_ << std::endl;
+}
 
 void ClientB::run(const std::string &host, uint16_t port) {
     grpc::ServerBuilder builder;

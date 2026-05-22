@@ -8,5 +8,5 @@ int main(int argc, char **argv) {
     }
 
     ClientB server(port);
-    server.run("0.0.0.0:", port);
+    server.run("0.0.0.0", port);
 }

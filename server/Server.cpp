@@ -1,20 +1,32 @@
 #include "Server.h"
+
 #include <cmath>
 #include <iostream>
 
-Server::Server(uint16_t port) : port_(port), service_(*this) { }
+Server::Server(uint16_t port, std::string b_host, uint16_t b_port)
+    : port_(port),
+      service_(*this),
+      b_target_(std::move(b_host) + ":" + std::to_string(b_port)),
+      b_channel_(grpc::CreateChannel(b_target_, grpc::InsecureChannelCredentials())),
+      b_stub_(AccelerometerService::NewStub(b_channel_)) {}
 
 bool Server::isDuplicates(const AccelPacket &prev, const AccelPacket &cur) {
-    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
-           && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
+    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY
+        && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
+        && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
 }
 
-Server::ServiceImpl::ServiceImpl(Server &owner) : owner_(owner) { };
-
 grpc::Status Server::ServiceImpl::StreamAccelData(
-    grpc::ServerContext *context,
-    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
-) {
+    grpc::ServerContext * context,
+    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream) {
+
+    grpc::ClientContext bctx;
+    auto bstream = owner_.b_stub_->StreamAccelData(&bctx);
+
+    if (!bstream) {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, "cannot connect to B");
+    }
+
     AccelPacket prev;
     bool has_prev = false;
     AccelPacket cur;
@@ -27,14 +39,22 @@ grpc::Status Server::ServiceImpl::StreamAccelData(
         has_prev = true;
         prev = cur;
 
-        AccelModule out;
-        out.set_timestamp(cur.timestamp());
-        out.set_module(std::sqrt(cur.x() * cur.x() + cur.y() * cur.y() + cur.z() * cur.z()));
+        if (!bstream->Write(cur)) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, "write to B failed");
+        }
 
-        stream->Write(out);
+        AccelModule out;
+        if (!bstream->Read(&out)) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, "read from B failed");
+        }
+
+        if (!stream->Write(out)) {
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE, "write to A failed");
+        }
     }
 
-    return grpc::Status::OK;
+    bstream->WritesDone();
+    return bstream->Finish();
 }
 
 void Server::run() {
