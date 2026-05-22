@@ -3,32 +3,23 @@
 #include <cmath>
 #include <iostream>
 
-void Server::shutdown() {
-    if (grpc_server_) {
-        grpc_server_->Shutdown();
-    }
-}
-
 Server::Server(uint16_t port, std::string b_host, uint16_t b_port)
     : port_(port),
       service_(*this),
       b_target_(std::move(b_host) + ":" + std::to_string(b_port)),
       b_channel_(grpc::CreateChannel(b_target_, grpc::InsecureChannelCredentials())),
-      b_stub_(AccelerometerService::NewStub(b_channel_)) {}
+      b_stub_(AccelerometerService::NewStub(b_channel_)) { }
 
 bool Server::isDuplicates(const AccelPacket &prev, const AccelPacket &cur) {
-    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY
-        && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
-        && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
+    return std::abs(prev.x() - cur.x()) < DUPLICATES_ACCURACY && std::abs(prev.y() - cur.y()) < DUPLICATES_ACCURACY
+           && std::abs(prev.z() - cur.z()) < DUPLICATES_ACCURACY;
 }
-
 
 grpc::Status Server::ServiceImpl::StreamAccelData(
     grpc::ServerContext *context,
-    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream)
-{
-    std::cout << "[S] new stream from A, opening stream to B at "
-              << owner_.b_target_ << std::endl;
+    grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
+) {
+    std::cout << "[S] new stream from A, opening stream to B at " << owner_.b_target_ << std::endl;
 
     grpc::ClientContext bctx;
     auto bstream = owner_.b_stub_->StreamAccelData(&bctx);
@@ -70,11 +61,10 @@ grpc::Status Server::ServiceImpl::StreamAccelData(
 
     bstream->WritesDone();
     grpc::Status bstatus = bstream->Finish();
-    std::cout << "[S] stream finished, relayed " << relayed_count
-              << " packets, B status: " << bstatus.error_message() << std::endl;
+    std::cout << "[S] stream finished, relayed " << relayed_count << " packets, B status: " << bstatus.error_message()
+              << std::endl;
     return grpc::Status::OK;
 }
-
 
 void Server::run() {
     const std::string address = "0.0.0.0:" + std::to_string(port_);

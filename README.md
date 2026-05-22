@@ -1,24 +1,27 @@
 ## Test assignment for the kvadraOS Desktop team 3.
-A minimal implementation of Level 1 has been completed.
+Simple implementation of Level 2 has been completed.
 
-The assignment states a 2‑week deadline. Since I received the test task email on May 8,
-I plan to finish the task by May 21.
+## What is done
+- Implemented a distributed accelerometer data pipeline with 3 processes: `server`, `client_a`, and `client_b`.
+- Added a gRPC/Protobuf transport layer.
+- The communication format is defined in proto/accel.proto: it declares a bidirectional streaming gRPC service and the AccelPacket/AccelModule message schemas used to exchange accelerometer data and computed results between nodes.
 
+## Build requirements
+- gRPC and Protobuf installed and visible to CMake
+- `nlohmann/json` is downloaded automatically via `FetchContent`
 
-## Project structure
-- **TcpConnection** – RAII TCP socket wrapper with newline‑delimited `sendLine`/`recvLine`.
-- **Client** – base class for clients, provides thread‑safe file logging.
-- **Server** – accepts A and B, discards consecutive duplicates, relays data.
+## Build instructions
+1. Put the protobuf file here:
+    - `proto/accel.proto`
 
-## Build
-```bash
-cmake -B build && cmake --build build
-```
+2. Configure and build:
+   ```bash
+   cmake -S . -B build
+   cmake --build build -j
 
 ## Run 
 ```bash
-./build/server          # listens on port 5000
+./build/server
 ./build/client_b
 ./build/client_a
 ```
-

@@ -18,16 +18,14 @@ grpc::Status ClientB::ServiceImpl::StreamAccelData(
         result.set_module(std::sqrt(packet.x() * packet.x() + packet.y() * packet.y() + packet.z() * packet.z()));
         stream->Write(result);
 
-        owner_.log(
-            "[B] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module())
-        );
+        owner_.log("[B] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module()));
         count++;
     }
     std::cout << "[B] stream closed, processed " << count << " packets" << std::endl;
     return grpc::Status::OK;
 }
 
-ClientB::ClientB(uint16_t port) : port_(port), service_(*this), Client("logs/client_b") {
+ClientB::ClientB(uint16_t port) : port_(port), service_(*this), Client(log_dir) {
     std::cout << "B started on port " << port_ << std::endl;
 }
 

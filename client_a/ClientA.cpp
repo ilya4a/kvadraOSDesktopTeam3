@@ -1,5 +1,4 @@
 #include "ClientA.h"
-#include "Accel.h"
 
 #include <accel.grpc.pb.h>
 #include <atomic>
@@ -70,7 +69,6 @@ void ClientA::run(const std::string &host, uint16_t port) {
     AccelModule response;
     while (running && stream->Read(&response)) {
         while (running && stream->Read(&response)) {
-
             if (logModule.is_open()) {
                 logModule << response.timestamp() << " " << response.module() << std::endl;
                 logModule.flush();
@@ -80,7 +78,6 @@ void ClientA::run(const std::string &host, uint16_t port) {
                 + " ts: " + std::to_string(response.timestamp()));
         }
     }
-
 
     running = false;
     sender.join();

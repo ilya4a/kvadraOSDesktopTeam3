@@ -47,9 +47,11 @@ add_library(grpc_proto STATIC
 target_include_directories(grpc_proto PUBLIC ${GENERATED_DIR})
 target_link_libraries(grpc_proto PUBLIC protobuf::libprotobuf gRPC::grpc++)
 
-add_library(transport STATIC transport/TcpConnection.cpp)
-target_include_directories(transport PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/transport)
-target_link_libraries(transport PUBLIC Threads::Threads core)
+add_library(transport INTERFACE)
+
+target_include_directories(transport INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/transport
+)
 
 add_executable(server
         server/main.cpp
@@ -61,6 +63,7 @@ target_link_libraries(server PRIVATE grpc_proto core Threads::Threads)
 add_executable(client_a
         client_a/client_a_main.cpp
         client_a/ClientA.cpp
+        transport
         transport/Client.h
 )
 target_link_libraries(client_a PRIVATE grpc_proto core Threads::Threads)
@@ -68,21 +71,22 @@ target_link_libraries(client_a PRIVATE grpc_proto core Threads::Threads)
 add_executable(client_b
         client_b/client_b_main.cpp
         client_b/ClientB.cpp
+        transport
         transport/Client.h
 )
 target_link_libraries(client_b PRIVATE grpc_proto core Threads::Threads)
 
 target_link_libraries(client_a PRIVATE
         grpc_proto
-        transport
         core
+        transport
         Threads::Threads
 )
 
 target_link_libraries(client_b PRIVATE
         grpc_proto
-        transport
         core
+        transport
         Threads::Threads
 )
 

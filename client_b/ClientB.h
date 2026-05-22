@@ -9,6 +9,8 @@
 #include <Client.h>
 
 class ClientB final : public Client {
+    static constexpr const char *log_dir = "logs/client_b";
+
     class ServiceImpl final : public AccelerometerService::Service {
         ClientB &owner_;
 
