@@ -33,6 +33,12 @@ void ClientA::run(const std::string &host, uint16_t port) {
 
     auto stream = stub->StreamAccelData(&ctx);
 
+    if (!stream) {
+        std::cerr << "[A] failed to create stream" << std::endl;
+        return;
+    }
+    std::cout << "[A] connected to server, starting sensor stream" << std::endl;
+
     std::atomic<bool> running { true };
 
     std::thread sender([&]() {
@@ -63,8 +69,16 @@ void ClientA::run(const std::string &host, uint16_t port) {
 
     AccelModule response;
     while (running && stream->Read(&response)) {
-        log("[A]: receive module = " + std::to_string(response.module())
+        while (running && stream->Read(&response)) {
+
+            if (logModule.is_open()) {
+                logModule << response.timestamp() << " " << response.module() << std::endl;
+                logModule.flush();
+            }
+
+            log("[A]: receive module = " + std::to_string(response.module())
                 + " ts: " + std::to_string(response.timestamp()));
+        }
     }
 
 

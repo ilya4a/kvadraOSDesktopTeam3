@@ -23,7 +23,7 @@ class Client {
             std::cerr << "Client: failed to create directories " << log_client_dir << ": " << ec.message() << std::endl;
         }
 
-        logClient = std::ofstream(log_client_dir / log_client_name);
+        logClient = std::ofstream(log_client_dir / log_client_name, std::ios::app);
 
         if (!logClient) {
             std::cerr << "Client: couldn't open a " << log_client_name << std::endl;

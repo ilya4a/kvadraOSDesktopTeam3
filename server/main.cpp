@@ -2,7 +2,22 @@
 #include "Server.h"
 #include <string>
 
+#include <csignal>
+#include <memory>
+
+std::unique_ptr<grpc::Server> g_grpc_server;
+
+void signal_handler(int signum) {
+    std::cout << "\n[S] Received signal " << signum << ", shutting down..." << std::endl;
+    if (g_grpc_server) {
+        g_grpc_server->Shutdown();
+    }
+}
+
 int main(int argc, char *argv[]) {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
     uint16_t port_listen = 5000;
     std::string b_host  = "127.0.0.1";
     uint16_t b_port = 5001;

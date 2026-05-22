@@ -9,7 +9,9 @@ grpc::Status ClientB::ServiceImpl::StreamAccelData(
     grpc::ServerContext *,
     grpc::ServerReaderWriter<AccelModule, AccelPacket> *stream
 ) {
+    std::cout << "[B] new stream from server" << std::endl;
     AccelPacket packet;
+    int count = 0;
     while (stream->Read(&packet)) {
         AccelModule result;
         result.set_timestamp(packet.timestamp());
@@ -19,7 +21,9 @@ grpc::Status ClientB::ServiceImpl::StreamAccelData(
         owner_.log(
             "[B] ts: = " + std::to_string(result.timestamp()) + " mod: " + std::to_string(result.module())
         );
+        count++;
     }
+    std::cout << "[B] stream closed, processed " << count << " packets" << std::endl;
     return grpc::Status::OK;
 }
 
